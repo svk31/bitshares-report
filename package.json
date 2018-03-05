@@ -1,0 +1,10 @@
+{
+  "name": "steem-report",
+  "version": "1.0.0",
+  "description": "Create a CSV export of content from the STEEM Blockchain",
+  "main": "app.js",
+  "author": "Brooks Boyd <bro@oks.me>",
+  "dependencies": {
+    "steem": "^0.7.1"
+  }
+}
