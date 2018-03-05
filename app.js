@@ -105,7 +105,7 @@ function doReport(recordData) {
             'STEEM',
             '',
             '',
-            'Claiming reward balance',
+            'Claiming reward balance - Power',
             'STEEM Power',
             timestamp
           ]);
