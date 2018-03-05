@@ -30,6 +30,7 @@ function parseCurrency(str) {
   };
 }
 
+// https://steemit.com/steemdev/@holger80/how-to-estimate-historic-steempermvests-values-for-converting-old-rewards-from-vest-to-steem
 function steemPerMvests(timestamp) {
   const a = 2.1325476281078992e-05;
   const b = -31099.685481490847;
