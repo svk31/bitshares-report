@@ -98,7 +98,7 @@ function doReport(recordData) {
         let vests = parseCurrency(data.reward_vests);
         if (vests.amount > 0) {
           let trxDate = Date.parse(timestamp)/1000;
-          let calculatedSteem = steemPerMvests(trxDate) * (vests.amount/1000);
+          let calculatedSteem = steemPerMvests(trxDate) * (vests.amount/1000000);
           out.push([
             trx_id + '-VEST',
             'Income',
