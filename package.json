@@ -4,6 +4,7 @@
   "description": "Create a CSV export of content from the STEEM Blockchain",
   "main": "app.js",
   "author": "Brooks Boyd <bro@oks.me>",
+  "license": "Creative Commons Attribution-ShareAlike 4.0 International License",
   "dependencies": {
     "steem": "^0.7.1"
   }

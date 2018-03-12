@@ -4,6 +4,8 @@ This is an import script for getting STEEM transactions into the CoinTracking.in
 
 This script uses the [`steem-js`](https://github.com/steemit/steem-js) library to make a connection to the STEEM blockchain, fetches all transactions for a given user, and converts it to a CSV file that can be imported into CoinTracking.
 
+[![cc-by-sa](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
+
 # Usage
 This script requires Node to run; either install Node locally and run
 
