@@ -16,6 +16,8 @@ const CHECK = process.argv[3] === "true";
 const NO_GROUPING = process.argv[4] === "true";
 const FILTER_TYPE = process.argv[5];
 
+// const FILTER_DATE = new Date("2018-05-23").getTime();
+
 /* Maintain a map of block numbers to block timestamp */
 let blockData = require("./blockData.json");
 let assetData = require("./assetData.json");
@@ -229,7 +231,7 @@ function printAmount(amount) {
 }
 
 function filterEntries(entries) {
-    if (!FILTER_TYPE) return entries;
+    if (!FILTER_TYPE && !FILTER_DATE) return entries;
     let entriesKeys = Object.keys(entries);
     for (var i = entriesKeys.length - 1; i >= 0; i--) {
         let trx_id = entriesKeys[i];
@@ -241,6 +243,13 @@ function filterEntries(entries) {
 
         if (!!FILTER_TYPE) {
             if (type !== FILTER_TYPE) {
+                delete entries[trx_id];
+                continue;
+            }
+        }
+
+        if(!!FILTER_DATE) {
+            if (new Date(timestamp).getTime() < FILTER_DATE) {
                 delete entries[trx_id];
                 continue;
             }
