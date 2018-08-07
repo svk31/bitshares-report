@@ -1,8 +1,9 @@
 {
   "name": "bitshares-report",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create a CSV export of content from the Bitshares Blockchain for use with Cointracking.info",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "jsnext:main": "./es/index.js",
   "author": "svk31",
   "license": "MIT",
   "dependencies": {
@@ -38,10 +39,13 @@
     "build:watch": "babel lib -d dist --watch",
     "clean": "rimraf dist build es",
     "prebuild": "npm run clean",
-    "build": "cross-env BABEL_ENV=cjs NODE_ENV=browser babel lib -d cjs",
+    "build": "cross-env BABEL_ENV=cjs babel lib -d dist",
+    "build-es": "cross-env BABEL_ENV=es babel lib -d es",
+    "postbuild": "npm run build-es",
     "precommit": "pretty-quick --staged",
     "prebrowserify": "npm run build",
-    "browserify": "cross-env NODE_ENV=production browserify cjs/index.js --standalone index -o build/index.js -d",
+    "prepublish": "npm run build",
+    "browserify": "cross-env NODE_ENV=production browserify dist/index.js --standalone index -o build/index.js -d",
     "postbrowserify": "cross-env NODE_ENV=production uglifyjs --compress --mangle --sequences --drop_console --mangle-props --screw-ie8 --output build/index.min.js -- build/index.js"
   }
 }
