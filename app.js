@@ -16,7 +16,7 @@ const CHECK = process.argv[3] === "true";
 const NO_GROUPING = process.argv[4] === "true";
 const FILTER_TYPE = process.argv[5];
 
-// const FILTER_DATE = new Date("2018-05-23").getTime();
+const FILTER_DATE = null; // new Date("2018-05-23").getTime();
 
 /* Maintain a map of block numbers to block timestamp */
 let blockData = require("./blockData.json");
