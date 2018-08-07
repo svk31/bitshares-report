@@ -87,6 +87,7 @@ function getAssetData(asset) {
 function resolveBlockTimes(operations) {
     return new Promise((resolve, reject) => {
         let promises = operations.map(op => {
+            if (op.block_time) blockData[op.block_num] = new Date(op.block_time);
             return getBlockTime(op.block_num);
         });
         Promise.all(promises).then(() => {
@@ -166,7 +167,7 @@ function getBatch(account_id, stop, limit, start) {
                         op: JSON.parse(r.operation_history.op),
                         result: JSON.parse(r.operation_history.operation_result),
                         block_num: r.block_data.block_num,
-                        block_time: r.block_data.block_time
+                        block_time: r.block_data.block_time + "Z"
                     }
                 })
                 resolve(ops);
