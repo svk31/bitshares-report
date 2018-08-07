@@ -4,6 +4,7 @@ const ops = Object.keys(operations);
 const fs = require('fs');
 const moment = require("moment");
 const utils = require("./utils");
+const config = require("./config");
 
 if (process.argv.length < 3) {
     const path = require('path');
@@ -380,7 +381,7 @@ function doReport(recordData, accountId) {
 const opHistoryObject = "1.11.";
 
 async function doWork() {
-    let pageSize = 50;
+    let pageSize = config.useES ? 150 : 50;
     let finalOp = 0;
     let minSeen;
 
@@ -392,6 +393,7 @@ async function doWork() {
     console.log(user, "accountId", accountId);
 
     let start = opHistoryObject + "0";
+    if (config.useES) start = 0;
     let stop = opHistoryObject + "0";
 
     console.time("**** Done fetching data, time taken: ");
@@ -405,7 +407,6 @@ async function doWork() {
             break;
         }
         minSeen = result[result.length-1].id;
-
         /* Before parsing results we need to know the block times */
         await api.resolveBlockTimes(result);
 
@@ -435,7 +436,9 @@ async function doWork() {
             }
         });
 
-        start = opHistoryObject + (utils.getIndex(minSeen) - 1);
+        if (config.useES) start += result.length;
+        else
+            start = opHistoryObject + (utils.getIndex(minSeen) - 1);
     }
 
     doReport(recordData, accountId);

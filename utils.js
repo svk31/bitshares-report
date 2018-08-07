@@ -17,11 +17,6 @@ function printAmount(amount) {
     return (amount.amount).toFixed(asset.precision);
 }
 
-function precisionToRatio(p) {
-    if (typeof p !== "number") throw new Error("Input must be a number");
-    return Math.pow(10, p);
-}
-
 function getIndex(str) {
     let pieces = str.split(".");
     return parseInt(pieces[2], 10);
@@ -30,6 +25,5 @@ function getIndex(str) {
 module.exports = {
     parseCurrency,
     printAmount,
-    precisionToRatio,
     getIndex
 }

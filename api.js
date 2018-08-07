@@ -7,10 +7,12 @@ let assetData = require("./assetData.json");
 const operations = require("bitsharesjs").ChainTypes.operations;
 const ops = Object.keys(operations);
 
-function connect() {
-    /* ES uses http gets, no need to connect */
-    if (config.useES) return Promise.resolve();
+function precisionToRatio(p) {
+    if (typeof p !== "number") throw new Error("Input must be a number");
+    return Math.pow(10, p);
+}
 
+function connect() {
     return new Promise((resolve) => {
         bts.Apis.instance(config.apiNode, true).init_promise.then(resolve).catch((err => {
             console.error("Error connection to node:", err);
@@ -19,9 +21,6 @@ function connect() {
 }
 
 function disconnect() {
-    /* ES uses http gets, no need to disconnect */
-    if (config.useES) return Promise.resolve();
-
     bts.Apis.instance().close();
 }
 
@@ -155,6 +154,28 @@ function resolveAssets(operations, list) {
 }
 
 function getBatch(account_id, stop, limit, start) {
+    if (config.useES) {
+        console.log("query", `${config.esNode}/get_account_history?account_id=${account_id}&from_=${start}&size=${limit}&sort_by=block_data.block_time&type=data&agg_field=operation_type`)
+        return new Promise((resolve, reject) => {
+            fetch(`${config.esNode}/get_account_history?account_id=${account_id}&from_=${start}&size=${limit}&sort_by=block_data.block_time&type=data&agg_field=operation_type`)
+            .then(res => res.json())
+            .then(result => {
+                let ops = result.map(r => {
+                    return {
+                        id: r.account_history.operation_id,
+                        op: JSON.parse(r.operation_history.op),
+                        result: JSON.parse(r.operation_history.operation_result),
+                        block_num: r.block_data.block_num,
+                        block_time: r.block_data.block_time
+                    }
+                })
+                resolve(ops);
+            }).catch(() => {
+                resolve([]);
+            });
+        })
+    }
+
     return new Promise((resolve, reject) => {
         bts.Apis.instance()
         .history_api()
@@ -177,7 +198,6 @@ function getAsset(id) {
 function getBlock(block_num) {
     return blockData[block_num];
 }
-
 
 module.exports = {
     connect,
