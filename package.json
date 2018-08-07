@@ -44,7 +44,6 @@
     "postbuild": "npm run build-es",
     "precommit": "pretty-quick --staged",
     "prebrowserify": "npm run build",
-    "prepublish": "npm run build",
     "browserify": "cross-env NODE_ENV=production browserify dist/index.js --standalone index -o build/index.js -d",
     "postbrowserify": "cross-env NODE_ENV=production uglifyjs --compress --mangle --sequences --drop_console --mangle-props --screw-ie8 --output build/index.min.js -- build/index.js"
   }
