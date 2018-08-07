@@ -1,6 +1,6 @@
 {
   "name": "bitshares-report",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Create a CSV export of content from the Bitshares Blockchain for use with Cointracking.info",
   "main": "./dist/index.js",
   "jsnext:main": "./es/index.js",
