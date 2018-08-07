@@ -9,6 +9,7 @@
     "async": "^2.6.0",
     "bitsharesjs": "^1.5.8",
     "csv": "^3.0.2",
-    "moment": "^2.22.0"
+    "moment": "^2.22.0",
+    "node-fetch": "^2.2.0"
   }
 }

@@ -1,8 +1,9 @@
-const bts = require('bitsharesjs-ws');
+const api = require("./api");
 const operations = require("bitsharesjs").ChainTypes.operations;
 const ops = Object.keys(operations);
 const fs = require('fs');
 const moment = require("moment");
+const utils = require("./utils");
 
 if (process.argv.length < 3) {
     const path = require('path');
@@ -17,10 +18,6 @@ const NO_GROUPING = process.argv[4] === "true";
 const FILTER_TYPE = process.argv[5];
 
 const FILTER_DATE = null; // new Date("2018-05-23").getTime();
-
-/* Maintain a map of block numbers to block timestamp */
-let blockData = require("./blockData.json");
-let assetData = require("./assetData.json");
 
 let assetMovements = {};
 let transfers = {};
@@ -49,185 +46,6 @@ function getFinalBalance(asset) {
         sum += movement;
     });
     return sum;
-}
-
-function precisionToRatio(p) {
-    if (typeof p !== "number") throw new Error("Input must be a number");
-    return Math.pow(10, p);
-}
-
-function connectToChain() {
-    // let node = "wss://eu.nodes.bitshares.ws";
-    let node = "ws://127.0.0.1:8090";
-    return new Promise((resolve) => {
-        bts.Apis.instance(node, true).init_promise.then(resolve).catch((err => {
-            console.error("Error connection to node:", err);
-        }));
-    });
-}
-
-function disconnectFromChain() {
-    bts.Apis.instance().close();
-}
-
-function getUser(name) {
-    return new Promise((resolve, reject) => {
-        bts.Apis.instance().db_api().exec("get_full_accounts", [[name], false])
-        .then((result) => {
-            let [account] = result;
-            if (!account[1].balances) account[1].balances = [];
-            if (!account[1].call_orders) account[1].call_orders = [];
-            let assets = account[1].balances.map(b => {
-                return b.asset_type;
-            });
-
-            account[1].call_orders.forEach(c => {
-                let balanceIndex = account[1].balances.findIndex(b => {
-                    return b.asset_type === c.call_price.base.asset_id;
-                });
-                if(balanceIndex !== -1) {
-                    let newBalance = parseInt(account[1].balances[balanceIndex].balance, 10) +
-                    parseInt(c.collateral, 10);
-                    account[1].balances[balanceIndex].balance = newBalance;
-
-                } else {
-                    assets.push(c.call_price.base.asset_id);
-                    account[1].balances.push({
-                        balance: c.collateral,
-                        asset_type: c.call_price.base.asset_id
-                    })
-                }
-            });
-
-            resolve({accountId: account[1].account.id, assets, balances: account[1].balances});
-
-        }).catch(reject);
-    });
-}
-
-function getBlockTime(block) {
-    return new Promise((resolve, reject) => {
-        if (blockData[block]) return resolve(blockData[block]);
-
-        bts.Apis.instance().db_api().exec("get_block", [block])
-        .then((result) => {
-            blockData[block] = new Date(result.timestamp + "Z");
-            resolve(blockData[block]);
-        }).catch(reject);
-    });
-}
-
-function resolveBlockTimes(operations) {
-    return new Promise((resolve, reject) => {
-        let promises = operations.map(op => {
-            return getBlockTime(op.block_num);
-        });
-        Promise.all(promises).then(() => {
-            fs.writeFile("./blockData.json", JSON.stringify(blockData), "utf8", function(err) {
-                if (err) reject();
-                resolve();
-            });
-        }).catch(reject);
-    });
-}
-
-function getAssetData(asset) {
-    return new Promise((resolve, reject) => {
-        if (assetData[asset]) return resolve(assetData[asset]);
-
-        bts.Apis.instance().db_api().exec("get_objects", [[asset]])
-        .then((result) => {
-            let [a] = result;
-            assetData[asset] = {name: a.symbol.replace(/OPEN\.|BRIDGE\.|RUDEX\.|GDEX\.|BLOCK\./, ""), precision: a.precision, precisionRatio: precisionToRatio(a.precision)};
-            resolve(assetData[asset]);
-        }).catch(reject);
-    });
-}
-
-function resolveAssets(operations, list) {
-    return new Promise((resolve, reject) => {
-        let promises = [];
-        let assets = {};
-        if (operations) {
-            operations.forEach(record => {
-                const type = ops[record.op[0]];
-                switch (type) {
-                    case "transfer": {
-                        // console.log("transfer record.op:", record.op);
-                        assets[record.op[1].amount.asset_id] = true;
-                        assets[record.op[1].fee.asset_id] = true;
-                        break;
-                    }
-                    case "fill_order": {
-                        assets[record.op[1].pays.asset_id] = true;
-                        assets[record.op[1].receives.asset_id] = true;
-                        assets[record.op[1].fee.asset_id] = true;
-                        break;
-                    }
-                    case "asset_issue": {
-                        assets[record.op[1].asset_to_issue.asset_id] = true;
-                        assets[record.op[1].fee.asset_id] = true;
-                        break;
-                    }
-                    default: {
-                        break;
-                    }
-                }
-            });
-        }
-
-        if (list) {
-            list.forEach(entry => {
-                assets[entry] = true;
-            })
-        }
-
-
-        Object.keys(assets).forEach(asset_id => {
-            if (!assetData[asset_id] && !!asset_id) {
-                promises.push(getAssetData(asset_id));
-            }
-        })
-        Promise.all(promises).then(() => {
-            fs.writeFile("./assetData.json", JSON.stringify(assetData), "utf8", function(err) {
-                if (err) reject();
-                resolve();
-            });
-        }).catch(reject);
-    });
-}
-
-function getBatch(account_id, stop, limit, start) {
-    return new Promise((resolve, reject) => {
-        bts.Apis.instance()
-        .history_api()
-        .exec("get_account_history", [
-            account_id,
-            stop,
-            limit,
-            start
-        ])
-        .then(operations => {
-            resolve(operations);
-        }).catch(reject);
-    });
-}
-
-function parseCurrency(amount) {
-    let asset = assetData[amount.asset_id];
-    let fullAmount = amount.amount / asset.precisionRatio;
-    return {
-        amount: fullAmount,
-        currency: asset.name,
-        asset_id: amount.asset_id
-    };
-}
-
-function printAmount(amount) {
-    if (!amount.amount || !amount.currency) return "";
-    let asset = assetData[amount.asset_id];
-
-    return (amount.amount).toFixed(asset.precision);
 }
 
 function filterEntries(entries) {
@@ -310,17 +128,12 @@ function addOutputEntry(output, type, buy, sell, fee, date, opType, comment, tra
     if (fee.amount) trackMovements(fee.currency, -fee.amount, opType, date);
 
     output.push([
-        type, printAmount(buy), buy.currency, printAmount(sell),
-        sell.currency, printAmount(fee), fee.currency, "BTS-DEX",
+        type, utils.printAmount(buy), buy.currency, utils.printAmount(sell),
+        sell.currency, utils.printAmount(fee), fee.currency, "BTS-DEX",
         tradeGroup || "", comment || "", date
     ]);
 
     return output;
-}
-
-function getIndex(str) {
-    let pieces = str.split(".");
-    return parseInt(pieces[2], 10);
 }
 
 function doReport(recordData, accountId) {
@@ -362,8 +175,8 @@ function doReport(recordData, accountId) {
         switch (type) {
 
             case "vesting_balance_withdraw":
-                let vestingFunds = parseCurrency(data.amount);
-                fee = parseCurrency(data.fee);
+                let vestingFunds = utils.parseCurrency(data.amount);
+                fee = utils.parseCurrency(data.fee);
 
                 out = addOutputEntry(
                     out, data.owner === "1.2.30665" && vestingFunds.amount > 10000 ? "Income" : "Deposit", vestingFunds, null, fee, // dev.bitsharesblocks
@@ -373,7 +186,7 @@ function doReport(recordData, accountId) {
                 break;
 
             case "balance_claim":
-                let balanceClaimFunds = parseCurrency(data.total_claimed);
+                let balanceClaimFunds = utils.parseCurrency(data.total_claimed);
 
                 out = addOutputEntry(
                     out, "Deposit", balanceClaimFunds, null, null,
@@ -385,8 +198,8 @@ function doReport(recordData, accountId) {
 
 
             case "transfer":
-                let funds = parseCurrency(data.amount);
-                fee = parseCurrency(data.fee);
+                let funds = utils.parseCurrency(data.amount);
+                fee = utils.parseCurrency(data.fee);
                 if (data.to == accountId) {
                     // Funds coming in to the account
                     out = addOutputEntry(
@@ -403,9 +216,9 @@ function doReport(recordData, accountId) {
                 break;
 
             case 'fill_order':
-                let soldFunds = parseCurrency(data.pays);
-                let boughtFunds = parseCurrency(data.receives);
-                fee = parseCurrency(data.fee);
+                let soldFunds = utils.parseCurrency(data.pays);
+                let boughtFunds = utils.parseCurrency(data.receives);
+                fee = utils.parseCurrency(data.fee);
                 if (fee.currency !== "BTS") {
                     if (boughtFunds.currency === fee.currency) {
                         boughtFunds.amount -= fee.amount;
@@ -425,8 +238,8 @@ function doReport(recordData, accountId) {
                 break;
 
             case "asset_issue": {
-                let issuedFunds = parseCurrency(data.asset_to_issue);
-                fee = data.issuer === accountId ? parseCurrency(data.fee) : null;
+                let issuedFunds = utils.parseCurrency(data.asset_to_issue);
+                fee = data.issuer === accountId ? utils.parseCurrency(data.fee) : null;
                 if (data.issue_to_account === accountId) {
                     out = addOutputEntry(
                         out, "Deposit", issuedFunds, null, fee,
@@ -445,7 +258,7 @@ function doReport(recordData, accountId) {
             case "limit_order_create":
             case "limit_order_cancel":
             case "call_order_update":
-                fee = parseCurrency(data.fee);
+                fee = utils.parseCurrency(data.fee);
                 if (fee.amount > 0) {
                     out = addOutputEntry(
                         out, "Withdrawal", null, fee, null,
@@ -457,7 +270,7 @@ function doReport(recordData, accountId) {
 
             case "account_create":
                 if (data.registrar === accountId) {
-                    fee = parseCurrency(data.fee);
+                    fee = utils.parseCurrency(data.fee);
                     out = addOutputEntry(
                         out, "Withdrawal", null, fee, null,
                         timestamp, type, `${type} fee`
@@ -467,8 +280,8 @@ function doReport(recordData, accountId) {
                 break;
 
             case "asset_fund_fee_pool": {
-                fee = parseCurrency(data.fee);
-                let fundFunds = parseCurrency({amount: data.amount, asset_id: "1.3.0"});
+                fee = utils.parseCurrency(data.fee);
+                let fundFunds = utils.parseCurrency({amount: data.amount, asset_id: "1.3.0"});
 
                 out = addOutputEntry(
                     out, "Withdrawal", null, fundFunds, fee,
@@ -572,10 +385,10 @@ async function doWork() {
     let minSeen;
 
     let recordData = {};
-    let connect = await connectToChain();
+    let connect = await api.connect();
     console.log("\n____ " + user + " ____\n");
     console.log("Connected to network:", connect[0].network_name);
-    const {accountId, balances, assets} = await getUser(user);
+    const {accountId, balances, assets} = await api.getUser(user);
     console.log(user, "accountId", accountId);
 
     let start = opHistoryObject + "0";
@@ -586,7 +399,7 @@ async function doWork() {
 
     while (true) {
         // console.log(`Fetching from index ${start}...`);
-        let result = await getBatch(accountId, stop, pageSize, start);
+        let result = await api.getBatch(accountId, stop, pageSize, start);
         if (!result.length || result[result.length-1].id === minSeen) {
             console.timeEnd("**** Done fetching data, time taken: ");
             break;
@@ -594,21 +407,21 @@ async function doWork() {
         minSeen = result[result.length-1].id;
 
         /* Before parsing results we need to know the block times */
-        await resolveBlockTimes(result);
+        await api.resolveBlockTimes(result);
 
         /* Before parsing results we need to know the asset info (precision) */
-        await resolveAssets(null, assets);
-        await resolveAssets(result);
+        await api.resolveAssets(null, assets);
+        await api.resolveAssets(result);
 
         /* Now that we have all assets, parse the balances properly */
         balances.forEach(b => {
-            let amount = parseCurrency({amount: b.balance, asset_id: b.asset_type});
+            let amount = utils.parseCurrency({amount: b.balance, asset_id: b.asset_type});
             accountBalances[amount.currency] = amount;
         })
 
         result.map(function(record) {
             const trx_id = record.id;
-            let timestamp = blockData[record.block_num];
+            let timestamp = api.getBlock(record.block_num);
             const type = ops[record.op[0]];
             const data = record.op[1];
 
@@ -622,10 +435,10 @@ async function doWork() {
             }
         });
 
-        start = opHistoryObject + (getIndex(minSeen) - 1);
+        start = opHistoryObject + (utils.getIndex(minSeen) - 1);
     }
 
     doReport(recordData, accountId);
-    disconnectFromChain();
+    api.disconnect();
 }
 doWork();
