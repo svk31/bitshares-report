@@ -1,5 +1,3 @@
-"use strict";
-
 var _require = require("bitsharesjs"),
     ChainStore = _require.ChainStore;
 
