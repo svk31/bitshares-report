@@ -1,27 +1,23 @@
-var config = require("../config");
-var bts = require("bitsharesjs-ws");
+const config = require("../config");
 
-var _require = require("bitsharesjs"),
-    ChainTypes = _require.ChainTypes,
-    ChainStore = _require.ChainStore,
-    FetchChain = _require.FetchChain;
+const bts = require("bitsharesjs-ws");
 
-var operations = ChainTypes.operations;
+const {ChainTypes, ChainStore, FetchChain} = require("bitsharesjs");
 
-var ops = Object.keys(operations);
-
-var blockData = {};
-var assetData = {};
+const {operations} = ChainTypes;
+const ops = Object.keys(operations);
+let blockData = {};
+let assetData = {};
 
 function connect() {
-    return new Promise(function(resolve) {
+    return new Promise(resolve => {
         bts.Apis.instance(config.apiNode, true)
-            .init_promise.then(function(res) {
-                ChainStore.init(false).then(function() {
+            .init_promise.then(res => {
+                ChainStore.init(false).then(() => {
                     resolve(res);
                 });
             })
-            .catch(function(err) {
+            .catch(err => {
                 console.error("Error connection to node:", err);
             });
     });
@@ -32,22 +28,15 @@ function disconnect() {
 }
 
 function getUser(name) {
-    return new Promise(function(resolve, reject) {
-        var _FetchChain;
-
-        FetchChain(
-            "getAccount",
-            name,
-            undefined,
-            ((_FetchChain = {}), (_FetchChain[name] = false), _FetchChain)
-        )
-            .then(function(result) {
-                var account = result.toJS();
+    return new Promise((resolve, reject) => {
+        FetchChain("getAccount", name, undefined, {
+            [name]: false
+        })
+            .then(result => {
+                let account = result.toJS();
                 if (!account.balances) account.balances = {};
                 if (!account.call_orders) account.call_orders = [];
-                var assets = Object.keys(account.balances);
-
-                // account.call_orders.forEach(c => {
+                let assets = Object.keys(account.balances); // account.call_orders.forEach(c => {
                 //     let balanceIndex = account.balances.findIndex(b => {
                 //         return b.asset_type === c.call_price.base.asset_id;
                 //     });
@@ -66,7 +55,7 @@ function getUser(name) {
 
                 resolve({
                     accountId: account.id,
-                    assets: assets,
+                    assets,
                     balances: account.balances
                 });
             })
@@ -75,13 +64,12 @@ function getUser(name) {
 }
 
 function getBlockTime(block) {
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
         if (blockData[block]) return resolve(blockData[block]);
-
         bts.Apis.instance()
             .db_api()
             .exec("get_block", [block])
-            .then(function(result) {
+            .then(result => {
                 blockData[block] = new Date(result.timestamp + "Z");
                 resolve(blockData[block]);
             })
@@ -90,19 +78,13 @@ function getBlockTime(block) {
 }
 
 function getAssetData(asset) {
-    return new Promise(function(resolve, reject) {
-        var _FetchChain2;
-
+    return new Promise((resolve, reject) => {
         if (assetData[asset]) return resolve(assetData[asset]);
-
-        FetchChain(
-            "getObject",
-            asset,
-            undefined,
-            ((_FetchChain2 = {}), (_FetchChain2[asset] = false), _FetchChain2)
-        )
-            .then(function(result) {
-                var a = result.toJS();
+        FetchChain("getObject", asset, undefined, {
+            [asset]: false
+        })
+            .then(result => {
+                let a = result.toJS();
                 assetData[asset] = {
                     symbol: a.symbol.replace(
                         /OPEN\.|BRIDGE\.|RUDEX\.|GDEX\.|BLOCK\./,
@@ -112,15 +94,15 @@ function getAssetData(asset) {
                 };
                 resolve(assetData[asset]);
             })
-            .catch(function(err) {
+            .catch(err => {
                 reject();
             });
     });
 }
 
 function resolveBlockTimes(operations) {
-    return new Promise(function(resolve, reject) {
-        var promises = operations.map(function(op) {
+    return new Promise((resolve, reject) => {
+        let promises = operations.map(op => {
             if (op.block_time)
                 blockData[op.block_num] = new Date(op.block_time);
             return getBlockTime(op.block_num);
@@ -132,12 +114,14 @@ function resolveBlockTimes(operations) {
 }
 
 function resolveAssets(operations, list) {
-    return new Promise(function(resolve, reject) {
-        var promises = [];
-        var assets = {};
+    return new Promise((resolve, reject) => {
+        let promises = [];
+        let assets = {};
+
         if (operations) {
-            operations.forEach(function(record) {
-                var type = ops[record.op[0]];
+            operations.forEach(record => {
+                const type = ops[record.op[0]];
+
                 switch (type) {
                     case "transfer": {
                         // console.log("transfer record.op:", record.op);
@@ -145,17 +129,20 @@ function resolveAssets(operations, list) {
                         assets[record.op[1].fee.asset_id] = true;
                         break;
                     }
+
                     case "fill_order": {
                         assets[record.op[1].pays.asset_id] = true;
                         assets[record.op[1].receives.asset_id] = true;
                         assets[record.op[1].fee.asset_id] = true;
                         break;
                     }
+
                     case "asset_issue": {
                         assets[record.op[1].asset_to_issue.asset_id] = true;
                         assets[record.op[1].fee.asset_id] = true;
                         break;
                     }
+
                     default: {
                         break;
                     }
@@ -164,12 +151,12 @@ function resolveAssets(operations, list) {
         }
 
         if (list) {
-            list.forEach(function(entry) {
+            list.forEach(entry => {
                 assets[entry] = true;
             });
         }
 
-        Object.keys(assets).forEach(function(asset_id) {
+        Object.keys(assets).forEach(asset_id => {
             if (!assetData[asset_id] && !!asset_id) {
                 promises.push(getAssetData(asset_id));
             }
@@ -189,13 +176,13 @@ function getBlock(block_num) {
 }
 
 module.exports = {
-    connect: connect,
-    disconnect: disconnect,
-    getUser: getUser,
-    getBlockTime: getBlockTime,
-    getAssetData: getAssetData,
-    resolveAssets: resolveAssets,
-    resolveBlockTimes: resolveBlockTimes,
-    getAsset: getAsset,
-    getBlock: getBlock
+    connect,
+    disconnect,
+    getUser,
+    getBlockTime,
+    getAssetData,
+    resolveAssets,
+    resolveBlockTimes,
+    getAsset,
+    getBlock
 };

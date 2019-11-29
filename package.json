@@ -1,6 +1,6 @@
 {
   "name": "bitshares-report",
-  "version": "0.2.1",
+  "version": "2.0.0",
   "description": "Create a CSV export of content from the Bitshares Blockchain for use with Cointracking.info",
   "main": "./dist/index.js",
   "jsnext:main": "./es/index.js",
@@ -8,17 +8,19 @@
   "license": "MIT",
   "dependencies": {
     "async": "^2.6.0",
-    "csv": "^3.0.2",
+    "csv": "^5.3.0",
     "moment": "^2.22.0",
     "node-fetch": "^2.2.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.7.4",
     "assert": "^1.4.1",
-    "babel-cli": "^6.26.0",
     "babel-eslint": "^8.2.3",
     "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-stage-1": "^6.24.1",
+    "@babel/core": "^7.7.4",
+    "@babel/preset-env": "^7.7.4",
+    "@babel/preset-stage-1": "^7.0.0",
+    "bitsharesjs": "^1.8.0",
     "browserify": "^16.2.2",
     "cross-env": "^5.0.1",
     "eslint": "^4.19.1",
@@ -28,8 +30,7 @@
     "prettier": "^1.11.1",
     "pretty-quick": "^1.4.1",
     "rimraf": "^2.6.1",
-    "uglify-js": "^3.3.10",
-    "bitsharesjs": "^1.8.0"
+    "uglify-js": "^3.3.10"
   },
   "peerDependencies": {
     "bitsharesjs": "^1.8.0"

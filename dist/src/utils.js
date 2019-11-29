@@ -1,7 +1,4 @@
-"use strict";
-
-var _require = require("bitsharesjs"),
-    ChainStore = _require.ChainStore;
+const {ChainStore} = require("bitsharesjs");
 
 function precisionToRatio(p) {
     if (typeof p !== "number") throw new Error("Input must be a number");
@@ -9,14 +6,15 @@ function precisionToRatio(p) {
 }
 
 function parseCurrency(amount) {
-    var asset = ChainStore.getAsset(amount.asset_id);
+    let asset = ChainStore.getAsset(amount.asset_id);
     if (asset) asset = asset.toJS();
     else {
-        asset = {precision: 5};
+        asset = {
+            precision: 5
+        };
     }
-    var precisionRatio = precisionToRatio(asset.precision);
-
-    var fullAmount = amount.amount / precisionRatio;
+    let precisionRatio = precisionToRatio(asset.precision);
+    let fullAmount = amount.amount / precisionRatio;
     return {
         amount: fullAmount,
         currency: asset.symbol,
@@ -26,22 +24,23 @@ function parseCurrency(amount) {
 
 function printAmount(amount) {
     if (!amount.amount || !amount.currency) return "";
-    var asset = ChainStore.getAsset(amount.asset_id);
+    let asset = ChainStore.getAsset(amount.asset_id);
     if (asset) asset = asset.toJS();
     else {
-        asset = {precision: 5};
+        asset = {
+            precision: 5
+        };
     }
-
     return amount.amount.toFixed(asset.precision);
 }
 
 function getIndex(str) {
-    var pieces = str.split(".");
+    let pieces = str.split(".");
     return parseInt(pieces[2], 10);
 }
 
 module.exports = {
-    parseCurrency: parseCurrency,
-    printAmount: printAmount,
-    getIndex: getIndex
+    parseCurrency,
+    printAmount,
+    getIndex
 };

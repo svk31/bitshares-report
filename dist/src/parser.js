@@ -1,19 +1,18 @@
-"use strict";
+const moment = require("moment");
 
-var moment = require("moment");
-var utils = require("./utils");
+const utils = require("./utils");
 
-var assetMovements = {};
-var runningBalance = {};
-var movementTypes = {};
-var accountBalances = {};
-var transfers = {};
-var fills = {};
+let assetMovements = {};
+let runningBalance = {};
+let movementTypes = {};
+let accountBalances = {};
+let transfers = {};
+let fills = {};
 
 function getFinalBalance(asset) {
-    var sum = 0;
+    let sum = 0;
     if (!assetMovements[asset]) return 0;
-    assetMovements[asset].forEach(function(movement) {
+    assetMovements[asset].forEach(movement => {
         sum += movement;
     });
     return sum;
@@ -22,14 +21,14 @@ function getFinalBalance(asset) {
 function trackMovements(asset, amount, type, timestamp) {
     if (!assetMovements[asset]) assetMovements[asset] = [];
     if (!runningBalance[asset]) runningBalance[asset] = [];
-
     assetMovements[asset].push(amount);
     runningBalance[asset].push([type, amount, new Date(timestamp)]);
-
     if (!movementTypes[asset]) movementTypes[asset] = {};
     if (!movementTypes[asset][type])
-        movementTypes[asset][type] = {deposit: [], withdrawal: []};
-
+        movementTypes[asset][type] = {
+            deposit: [],
+            withdrawal: []
+        };
     movementTypes[asset][type][amount > 0 ? "deposit" : "withdrawal"].push(
         amount
     );
@@ -46,14 +45,24 @@ function addOutputEntry(
     comment,
     tradeGroup
 ) {
-    if (!buy) buy = {amount: "", currency: ""};
-    if (!sell) sell = {amount: "", currency: ""};
-    if (!fee) fee = {amount: "", currency: ""};
-
+    if (!buy)
+        buy = {
+            amount: "",
+            currency: ""
+        };
+    if (!sell)
+        sell = {
+            amount: "",
+            currency: ""
+        };
+    if (!fee)
+        fee = {
+            amount: "",
+            currency: ""
+        };
     if (buy.amount) trackMovements(buy.currency, buy.amount, opType, date);
     if (sell.amount) trackMovements(sell.currency, -sell.amount, opType, date);
     if (fee.amount) trackMovements(fee.currency, -fee.amount, opType, date);
-
     output.push([
         type,
         utils.printAmount(buy),
@@ -67,19 +76,16 @@ function addOutputEntry(
         comment || "",
         date
     ]);
-
     return output;
 }
 
 function filterEntries(entries, FILTER_TYPE, FILTER_DATE) {
     if (!FILTER_TYPE && !FILTER_DATE) return entries;
-    var entriesKeys = Object.keys(entries);
+    let entriesKeys = Object.keys(entries);
+
     for (var i = entriesKeys.length - 1; i >= 0; i--) {
-        var trx_id = entriesKeys[i];
-        var _entries$trx_id = entries[trx_id],
-            timestamp = _entries$trx_id.timestamp,
-            type = _entries$trx_id.type,
-            data = _entries$trx_id.data;
+        let trx_id = entriesKeys[i];
+        let {timestamp, type, data} = entries[trx_id];
 
         if (!!FILTER_TYPE) {
             if (type !== FILTER_TYPE) {
@@ -95,31 +101,29 @@ function filterEntries(entries, FILTER_TYPE, FILTER_DATE) {
             }
         }
     }
+
     console.log(
-        "Removed " +
-            (entriesKeys.length - Object.keys(entries).length) +
-            " entries by filtering"
+        `Removed ${entriesKeys.length -
+            Object.keys(entries).length} entries by filtering`
     );
     return entries;
 }
 
 function groupEntries(entries) {
-    var previous_fill = {};
-    var recordKeys = Object.keys(entries);
+    let previous_fill = {};
+    let recordKeys = Object.keys(entries);
+
     for (var i = recordKeys.length - 1; i >= 0; i--) {
-        var trx_id = recordKeys[i];
-        var _entries$trx_id2 = entries[trx_id],
-            timestamp = _entries$trx_id2.timestamp,
-            type = _entries$trx_id2.type,
-            data = _entries$trx_id2.data;
+        let trx_id = recordKeys[i];
+        let {timestamp, type, data} = entries[trx_id];
 
         switch (type) {
             case "fill_order":
-                var t1 = moment(timestamp);
-                var marketId =
+                let t1 = moment(timestamp);
+                let marketId =
                     data.receives.asset_id + "_" + data.pays.asset_id;
-                var previous = previous_fill[marketId];
-                var t0 = !!previous ? moment(previous.timestamp) : null;
+                let previous = previous_fill[marketId];
+                let t0 = !!previous ? moment(previous.timestamp) : null;
 
                 if (
                     !!previous &&
@@ -139,10 +143,11 @@ function groupEntries(entries) {
                     entries[trx_id].data = data;
                     delete entries[previous.trx_id];
                 }
+
                 previous_fill[marketId] = {
-                    data: data,
-                    timestamp: timestamp,
-                    trx_id: trx_id
+                    data,
+                    timestamp,
+                    trx_id
                 };
                 break;
 
@@ -150,16 +155,16 @@ function groupEntries(entries) {
                 break;
         }
     }
+
     console.log(
-        "Removed " +
-            (recordKeys.length - Object.keys(entries).length) +
-            " fill_order entries by grouping"
+        `Removed ${recordKeys.length -
+            Object.keys(entries).length} fill_order entries by grouping`
     );
     return entries;
 }
 
 function parseData(recordData, accountId, accountName) {
-    var out = [];
+    let out = [];
     out.push([
         "Type",
         "Buy Amount",
@@ -173,46 +178,21 @@ function parseData(recordData, accountId, accountName) {
         "Comment",
         "Date"
     ]);
-
-    var typeCounts = {};
+    let typeCounts = {};
 
     function incrementType(type) {
         if (!typeCounts[type]) typeCounts[type] = 0;
         typeCounts[type]++;
     }
 
-    for (
-        var _iterator = Object.keys(recordData),
-            _isArray = Array.isArray(_iterator),
-            _i = 0,
-            _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();
-        ;
-
-    ) {
-        var _ref;
-
-        if (_isArray) {
-            if (_i >= _iterator.length) break;
-            _ref = _iterator[_i++];
-        } else {
-            _i = _iterator.next();
-            if (_i.done) break;
-            _ref = _i.value;
-        }
-
-        var trx_id = _ref;
-        var _recordData$trx_id = recordData[trx_id],
-            timestamp = _recordData$trx_id.timestamp,
-            type = _recordData$trx_id.type,
-            data = _recordData$trx_id.data;
-
-        var fee = null;
+    for (let trx_id of Object.keys(recordData)) {
+        const {timestamp, type, data} = recordData[trx_id];
+        let fee = null;
 
         switch (type) {
             case "vesting_balance_withdraw":
-                var vestingFunds = utils.parseCurrency(data.amount);
+                let vestingFunds = utils.parseCurrency(data.amount);
                 fee = utils.parseCurrency(data.fee);
-
                 out = addOutputEntry(
                     out,
                     data.owner === "1.2.30665" && vestingFunds.amount > 10000
@@ -223,14 +203,13 @@ function parseData(recordData, accountId, accountName) {
                     fee, // dev.bitsharesblocks
                     timestamp,
                     type,
-                    accountName + " : Vesting balance withdraw"
+                    `${accountName} : Vesting balance withdraw`
                 );
                 incrementType(type);
                 break;
 
             case "balance_claim":
-                var balanceClaimFunds = utils.parseCurrency(data.total_claimed);
-
+                let balanceClaimFunds = utils.parseCurrency(data.total_claimed);
                 out = addOutputEntry(
                     out,
                     "Deposit",
@@ -239,15 +218,15 @@ function parseData(recordData, accountId, accountName) {
                     null,
                     timestamp,
                     type,
-                    accountName + " : Balance claim"
+                    `${accountName} : Balance claim`
                 );
-
                 incrementType(type);
                 break;
 
             case "transfer":
-                var funds = utils.parseCurrency(data.amount);
+                let funds = utils.parseCurrency(data.amount);
                 fee = utils.parseCurrency(data.fee);
+
                 if (data.to == accountId) {
                     // Funds coming in to the account
                     out = addOutputEntry(
@@ -260,7 +239,7 @@ function parseData(recordData, accountId, accountName) {
                         null, // pay.svk and bitshares-ui
                         timestamp,
                         type,
-                        accountName + " : From " + data.from
+                        `${accountName} : From ${data.from}`
                     );
                 } else {
                     out = addOutputEntry(
@@ -271,16 +250,18 @@ function parseData(recordData, accountId, accountName) {
                         fee,
                         timestamp,
                         type,
-                        accountName + ": To " + data.to
+                        `${accountName}: To ${data.to}`
                     );
                 }
+
                 incrementType(type);
                 break;
 
             case "fill_order":
-                var soldFunds = utils.parseCurrency(data.pays);
-                var boughtFunds = utils.parseCurrency(data.receives);
+                let soldFunds = utils.parseCurrency(data.pays);
+                let boughtFunds = utils.parseCurrency(data.receives);
                 fee = utils.parseCurrency(data.fee);
+
                 if (fee.currency !== "BTS") {
                     if (boughtFunds.currency === fee.currency) {
                         boughtFunds.amount -= fee.amount;
@@ -300,16 +281,16 @@ function parseData(recordData, accountId, accountName) {
                     timestamp,
                     type
                 );
-
                 incrementType(type);
                 break;
 
             case "asset_issue": {
-                var issuedFunds = utils.parseCurrency(data.asset_to_issue);
+                let issuedFunds = utils.parseCurrency(data.asset_to_issue);
                 fee =
                     data.issuer === accountId
                         ? utils.parseCurrency(data.fee)
                         : null;
+
                 if (data.issue_to_account === accountId) {
                     out = addOutputEntry(
                         out,
@@ -319,9 +300,10 @@ function parseData(recordData, accountId, accountName) {
                         fee,
                         timestamp,
                         type,
-                        accountName + " : Issued to account"
+                        `${accountName} : Issued to account`
                     );
                 }
+
                 incrementType(type);
                 break;
             }
@@ -335,6 +317,7 @@ function parseData(recordData, accountId, accountName) {
             case "limit_order_cancel":
             case "call_order_update":
                 fee = utils.parseCurrency(data.fee);
+
                 if (fee.amount > 0) {
                     out = addOutputEntry(
                         out,
@@ -344,10 +327,11 @@ function parseData(recordData, accountId, accountName) {
                         null,
                         timestamp,
                         type,
-                        type + " fee"
+                        `${type} fee`
                     );
                     incrementType(type);
                 }
+
                 break;
 
             case "account_create":
@@ -361,19 +345,19 @@ function parseData(recordData, accountId, accountName) {
                         null,
                         timestamp,
                         type,
-                        type + " fee"
+                        `${type} fee`
                     );
                     incrementType(type);
                 }
+
                 break;
 
             case "asset_fund_fee_pool": {
                 fee = utils.parseCurrency(data.fee);
-                var fundFunds = utils.parseCurrency({
+                let fundFunds = utils.parseCurrency({
                     amount: data.amount,
                     asset_id: "1.3.0"
                 });
-
                 out = addOutputEntry(
                     out,
                     "Withdrawal",
@@ -382,9 +366,8 @@ function parseData(recordData, accountId, accountName) {
                     fee,
                     timestamp,
                     type,
-                    "" + type
+                    `${type}`
                 );
-
                 incrementType(type);
                 break;
             }
@@ -394,11 +377,12 @@ function parseData(recordData, accountId, accountName) {
             }
         }
     }
+
     return out;
 }
 
 module.exports = {
-    parseData: parseData,
-    filterEntries: filterEntries,
-    groupEntries: groupEntries
+    parseData,
+    filterEntries,
+    groupEntries
 };

@@ -1,5 +1,6 @@
-var bts = require("bitsharesjs-ws");
-var fetchClient = void 0;
+const bts = require("bitsharesjs-ws");
+
+let fetchClient;
 
 module.exports = function(isBrowser) {
     if (isBrowser) fetchClient = fetch;
@@ -7,42 +8,32 @@ module.exports = function(isBrowser) {
         fetchClient = require("node-fetch");
     }
 
-    function getAccountHistoryES(account_id, limit, start) {
-        var esNode =
-            arguments.length > 3 && arguments[3] !== undefined
-                ? arguments[3]
-                : "https://eswrapper.bitshares.eu";
-
+    function getAccountHistoryES(
+        account_id,
+        limit,
+        start,
+        esNode = "https://eswrapper.bitshares.eu"
+    ) {
         console.log(
             "query",
-            esNode +
-                "/get_account_history?account_id=" +
-                account_id +
-                "&from_=" +
-                start +
-                "&size=" +
-                limit +
-                "&sort_by=block_data.block_time&type=data&agg_field=operation_type"
+            `${esNode}/get_account_history?account_id=${account_id}&from_=${start}&size=${limit}&sort_by=block_data.block_time&type=data&agg_field=operation_type`
         );
-        return new Promise(function(resolve, reject) {
+        return new Promise((resolve, reject) => {
             fetchClient(
-                esNode +
-                    "/get_account_history?account_id=" +
-                    account_id +
-                    "&from_=" +
-                    start +
-                    "&size=" +
-                    limit +
-                    "&sort_by=block_data.block_time&type=data&agg_field=operation_type"
+                `${esNode}/get_account_history?account_id=${account_id}&from_=${start}&size=${limit}&sort_by=block_data.block_time&type=data&agg_field=operation_type`
             )
-                .then(function(res) {
-                    return res.json();
-                })
-                .then(function(result) {
-                    var ops = result.map(function(r) {
+                .then(res => res.json())
+                .then(result => {
+                    let ops = result.map(r => {
+                        if ("amount_" in r.operation_history.op_object) {
+                            r.operation_history.op_object.amount =
+                                r.operation_history.op_object.amount_;
+                        }
+
                         return {
                             id: r.account_history.operation_id,
-                            op: JSON.parse(r.operation_history.op),
+                            op: r.operation_history.op_object,
+                            operation_type: r.operation_type,
                             result: JSON.parse(
                                 r.operation_history.operation_result
                             ),
@@ -52,18 +43,19 @@ module.exports = function(isBrowser) {
                     });
                     resolve(ops);
                 })
-                .catch(function() {
+                .catch(err => {
+                    console.log("getAccountHistory errror:", err);
                     resolve([]);
                 });
         });
     }
 
     function getAccountHistory(account_id, stop, limit, start) {
-        return new Promise(function(resolve, reject) {
+        return new Promise((resolve, reject) => {
             bts.Apis.instance()
                 .history_api()
                 .exec("get_account_history", [account_id, stop, limit, start])
-                .then(function(operations) {
+                .then(operations => {
                     resolve(operations);
                 })
                 .catch(reject);
@@ -71,7 +63,7 @@ module.exports = function(isBrowser) {
     }
 
     return {
-        getAccountHistory: getAccountHistory,
-        getAccountHistoryES: getAccountHistoryES
+        getAccountHistory,
+        getAccountHistoryES
     };
 };
