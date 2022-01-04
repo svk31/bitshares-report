@@ -89,7 +89,7 @@ async function doWork() {
         //     accountBalances[amount.currency] = amount;
         // })
 
-        result.map(function(record) {
+        result.map(function (record) {
             const trx_id = record.id;
             let timestamp = api.getBlock(record.block_num);
             const type = ops[record.operation_type];
@@ -100,7 +100,7 @@ async function doWork() {
                     recordData[trx_id] = {
                         timestamp,
                         type,
-                        data
+                        data,
                     };
             }
         });
@@ -127,7 +127,7 @@ async function doWork() {
     // });
 
     if (CHECK) {
-        Object.keys(runningBalance).forEach(asset => {
+        Object.keys(runningBalance).forEach((asset) => {
             if (!runningBalance[asset][0]) return;
             runningBalance[asset].sort(
                 (a, b) => a[2].getTime() - b[2].getTime()
@@ -142,7 +142,7 @@ async function doWork() {
             }
         });
         console.log("");
-        assetsToCheck.forEach(assetToCheck => {
+        assetsToCheck.forEach((assetToCheck) => {
             console.log(
                 `**** Asset movement by type for ${assetToCheck}: ****\n`
             );
@@ -150,14 +150,14 @@ async function doWork() {
 
             function getTotal(array) {
                 let sum = 0;
-                array.forEach(i => {
+                array.forEach((i) => {
                     sum += i;
                 });
                 return sum;
             }
 
             if (movementTypes[assetToCheck]) {
-                Object.keys(movementTypes[assetToCheck]).forEach(type => {
+                Object.keys(movementTypes[assetToCheck]).forEach((type) => {
                     let deposit = getTotal(
                         movementTypes[assetToCheck][type].deposit
                     );
@@ -177,7 +177,7 @@ async function doWork() {
     // Output the CSV
 
     if (CHECK) {
-        assetsToCheck.forEach(assetToCheck => {
+        assetsToCheck.forEach((assetToCheck) => {
             fs.open(
                 `output/${user}-${assetToCheck}-running-balances.csv`,
                 "w",

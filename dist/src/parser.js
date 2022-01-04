@@ -12,7 +12,7 @@ let fills = {};
 function getFinalBalance(asset) {
     let sum = 0;
     if (!assetMovements[asset]) return 0;
-    assetMovements[asset].forEach(movement => {
+    assetMovements[asset].forEach((movement) => {
         sum += movement;
     });
     return sum;
@@ -27,7 +27,7 @@ function trackMovements(asset, amount, type, timestamp) {
     if (!movementTypes[asset][type])
         movementTypes[asset][type] = {
             deposit: [],
-            withdrawal: []
+            withdrawal: [],
         };
     movementTypes[asset][type][amount > 0 ? "deposit" : "withdrawal"].push(
         amount
@@ -48,17 +48,17 @@ function addOutputEntry(
     if (!buy)
         buy = {
             amount: "",
-            currency: ""
+            currency: "",
         };
     if (!sell)
         sell = {
             amount: "",
-            currency: ""
+            currency: "",
         };
     if (!fee)
         fee = {
             amount: "",
-            currency: ""
+            currency: "",
         };
     if (buy.amount) trackMovements(buy.currency, buy.amount, opType, date);
     if (sell.amount) trackMovements(sell.currency, -sell.amount, opType, date);
@@ -74,7 +74,7 @@ function addOutputEntry(
         "BTS-DEX",
         tradeGroup || "",
         comment || "",
-        date
+        date,
     ]);
     return output;
 }
@@ -103,8 +103,9 @@ function filterEntries(entries, FILTER_TYPE, FILTER_DATE) {
     }
 
     console.log(
-        `Removed ${entriesKeys.length -
-            Object.keys(entries).length} entries by filtering`
+        `Removed ${
+            entriesKeys.length - Object.keys(entries).length
+        } entries by filtering`
     );
     return entries;
 }
@@ -147,7 +148,7 @@ function groupEntries(entries) {
                 previous_fill[marketId] = {
                     data,
                     timestamp,
-                    trx_id
+                    trx_id,
                 };
                 break;
 
@@ -157,8 +158,9 @@ function groupEntries(entries) {
     }
 
     console.log(
-        `Removed ${recordKeys.length -
-            Object.keys(entries).length} fill_order entries by grouping`
+        `Removed ${
+            recordKeys.length - Object.keys(entries).length
+        } fill_order entries by grouping`
     );
     return entries;
 }
@@ -176,7 +178,7 @@ function parseData(recordData, accountId, accountName) {
         "Exchange",
         "Trade Group",
         "Comment",
-        "Date"
+        "Date",
     ]);
     let typeCounts = {};
 
@@ -356,7 +358,7 @@ function parseData(recordData, accountId, accountName) {
                 fee = utils.parseCurrency(data.fee);
                 let fundFunds = utils.parseCurrency({
                     amount: data.amount,
-                    asset_id: "1.3.0"
+                    asset_id: "1.3.0",
                 });
                 out = addOutputEntry(
                     out,
@@ -384,5 +386,5 @@ function parseData(recordData, accountId, accountName) {
 module.exports = {
     parseData,
     filterEntries,
-    groupEntries
+    groupEntries,
 };

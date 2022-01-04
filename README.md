@@ -11,8 +11,8 @@ This script uses the [`bitsharesjs-ws`](https://github.com/bitshares/bitsharesjs
 This script requires Node to run; install Node locally and run:
 
 ```
-npm install
-npm start myUsername [debug] [no_grouping] [op_type_filter]
+yarn
+yarn start myUsername [debug] [no_grouping] [op_type_filter]
 ```
 
 Replace `myUsername` with the Bitshares user you wish to make a report for. Since Bitshares data is completely open, there are no login credentials needed to get a full transaction report on any user.

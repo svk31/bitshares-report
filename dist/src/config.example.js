@@ -4,5 +4,5 @@ module.exports = {
     useES: true,
     // use elastic search
     esNode: "https://wrapper.elasticsearch.bitshares.ws",
-    botPaymentAccounts: []
+    botPaymentAccounts: [],
 };

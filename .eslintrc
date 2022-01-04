@@ -1,5 +1,5 @@
 {
-    "parser": "babel-eslint",
+    "parser": "@babel/eslint-parser",
     "env": {
         "browser": true,
         "node": true,
@@ -12,9 +12,9 @@
         }
     },
     "rules": {
-        "no-unused-vars": ["error", { "vars": "all", "args": "after-used" }],
+        "no-unused-vars": ["error", {"vars": "all", "args": "after-used"}],
         "comma-dangle": 0,
-        "indent": ["error", 4, {SwitchCase: 1}],
+        "indent": ["error", 4, {"SwitchCase": 1}],
         "quotes": [2, "double", "avoid-escape"],
         "semi": [2, "always"],
         "camelcase": [0],

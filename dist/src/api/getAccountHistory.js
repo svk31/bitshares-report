@@ -2,7 +2,7 @@ const bts = require("bitsharesjs-ws");
 
 let fetchClient;
 
-module.exports = function(isBrowser) {
+module.exports = function (isBrowser) {
     if (isBrowser) fetchClient = fetch;
     else {
         fetchClient = require("node-fetch");
@@ -22,9 +22,9 @@ module.exports = function(isBrowser) {
             fetchClient(
                 `${esNode}/get_account_history?account_id=${account_id}&from_=${start}&size=${limit}&sort_by=block_data.block_time&type=data&agg_field=operation_type`
             )
-                .then(res => res.json())
-                .then(result => {
-                    let ops = result.map(r => {
+                .then((res) => res.json())
+                .then((result) => {
+                    let ops = result.map((r) => {
                         if ("amount_" in r.operation_history.op_object) {
                             r.operation_history.op_object.amount =
                                 r.operation_history.op_object.amount_;
@@ -38,12 +38,12 @@ module.exports = function(isBrowser) {
                                 r.operation_history.operation_result
                             ),
                             block_num: r.block_data.block_num,
-                            block_time: r.block_data.block_time + "Z"
+                            block_time: r.block_data.block_time + "Z",
                         };
                     });
                     resolve(ops);
                 })
-                .catch(err => {
+                .catch((err) => {
                     console.log("getAccountHistory errror:", err);
                     resolve([]);
                 });
@@ -55,7 +55,7 @@ module.exports = function(isBrowser) {
             bts.Apis.instance()
                 .history_api()
                 .exec("get_account_history", [account_id, stop, limit, start])
-                .then(operations => {
+                .then((operations) => {
                     resolve(operations);
                 })
                 .catch(reject);
@@ -64,6 +64,6 @@ module.exports = function(isBrowser) {
 
     return {
         getAccountHistory,
-        getAccountHistoryES
+        getAccountHistoryES,
     };
 };

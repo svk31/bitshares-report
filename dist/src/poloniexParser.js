@@ -16,13 +16,13 @@ let header = [
     "Exchange",
     "Trade Group",
     "Comment",
-    "Date"
+    "Date",
 ];
 var parser = parse(
     {
-        delimiter: ","
+        delimiter: ",",
     },
-    function(err, data) {
+    function (err, data) {
         /* Group entries belonging to the same order */
         let previous = {}; // amount, total, fee quote, base less fee, quote less fee
 
@@ -38,7 +38,7 @@ var parser = parse(
             return final;
         }, {});
         const originalLength = Object.keys(asObject).length;
-        Object.keys(asObject).forEach(indice => {
+        Object.keys(asObject).forEach((indice) => {
             let current = asObject[indice];
             let timestamp = asObject[indice][0];
             let t0 = moment(timestamp);
@@ -49,14 +49,14 @@ var parser = parse(
             let key = market + type; // amount = 5, total = 6
 
             /*
-        * If we're in the same market with the same price, it's the same order,
-        * so we group the fills together
-        */
+             * If we're in the same market with the same price, it's the same order,
+             * so we group the fills together
+             */
 
             let t1 = !!previous[key] ? moment(previous[key].data[0]) : null;
 
             if (previous[key] && orderNumber === previous[key].data[8]) {
-                entriesToSum.forEach(function(idx) {
+                entriesToSum.forEach(function (idx) {
                     asObject[indice][idx] =
                         parseFloat(asObject[indice][idx]) +
                         parseFloat(previous[key].data[idx]);
@@ -66,7 +66,7 @@ var parser = parse(
 
             previous[key] = {
                 data: asObject[indice],
-                idx: indice
+                idx: indice,
             };
         });
         console.log(
@@ -94,16 +94,16 @@ fs.createReadStream(inputFile).pipe(parser);
 
 var parser = parse(
     {
-        delimiter: ","
+        delimiter: ",",
     },
-    function(err, data) {
+    function (err, data) {
         console.log("Found:", data.length, "deposit entries");
         fs.open(`output/poloniexDepositHistory.csv`, "w", (err, fd) => {
             if (err) throw err;
             let withdrawOut = [];
             withdrawOut.push(header); // 2017-06-09 15:50:43, BTS, 52225.44149000, 93241942662236c7,COMPLETE
 
-            data.forEach(d => {
+            data.forEach((d) => {
                 if (d[2] !== "Amount")
                     withdrawOut.push([
                         "Deposit",
@@ -116,7 +116,7 @@ var parser = parse(
                         "Poloniex",
                         "",
                         d[3],
-                        d[0]
+                        d[0],
                     ]);
             });
             let contents = "";
@@ -136,16 +136,16 @@ fs.createReadStream("depositHistory.csv").pipe(parser);
 
 var parser = parse(
     {
-        delimiter: ","
+        delimiter: ",",
     },
-    function(err, data) {
+    function (err, data) {
         console.log("Found:", data.length, "withdrawal entries");
         fs.open(`output/poloniexWithdrawHistory.csv`, "w", (err, fd) => {
             if (err) throw err;
             let depositOut = [];
             depositOut.push(header); // 2017-10-28 11:22:51,SJCX,40047.36979911,17jzQhidKmmLrceAC47QptDjogz3TYBkcr,COMPLETE: e12e30b18fcc6aa8645dcd10dfd827dd90315215a9e8f6c88d7db60fe6c564e8
 
-            data.forEach(d => {
+            data.forEach((d) => {
                 if (d[2] !== "Amount")
                     depositOut.push([
                         "Withdrawal",
@@ -158,7 +158,7 @@ var parser = parse(
                         "Poloniex",
                         "",
                         d[3],
-                        d[0]
+                        d[0],
                     ]);
             });
             let contents = "";

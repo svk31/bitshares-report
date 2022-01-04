@@ -10,7 +10,7 @@ function parseCurrency(amount) {
     if (asset) asset = asset.toJS();
     else {
         asset = {
-            precision: 5
+            precision: 5,
         };
     }
     let precisionRatio = precisionToRatio(asset.precision);
@@ -18,7 +18,7 @@ function parseCurrency(amount) {
     return {
         amount: fullAmount,
         currency: asset.symbol,
-        asset_id: amount.asset_id
+        asset_id: amount.asset_id,
     };
 }
 
@@ -28,7 +28,7 @@ function printAmount(amount) {
     if (asset) asset = asset.toJS();
     else {
         asset = {
-            precision: 5
+            precision: 5,
         };
     }
     return amount.amount.toFixed(asset.precision);
@@ -42,5 +42,5 @@ function getIndex(str) {
 module.exports = {
     parseCurrency,
     printAmount,
-    getIndex
+    getIndex,
 };

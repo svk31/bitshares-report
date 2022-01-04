@@ -10,14 +10,14 @@ let blockData = {};
 let assetData = {};
 
 function connect() {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         bts.Apis.instance(config.apiNode, true)
-            .init_promise.then(res => {
+            .init_promise.then((res) => {
                 ChainStore.init(false).then(() => {
                     resolve(res);
                 });
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error("Error connection to node:", err);
             });
     });
@@ -30,9 +30,9 @@ function disconnect() {
 function getUser(name) {
     return new Promise((resolve, reject) => {
         FetchChain("getAccount", name, undefined, {
-            [name]: false
+            [name]: false,
         })
-            .then(result => {
+            .then((result) => {
                 let account = result.toJS();
                 if (!account.balances) account.balances = {};
                 if (!account.call_orders) account.call_orders = [];
@@ -56,7 +56,7 @@ function getUser(name) {
                 resolve({
                     accountId: account.id,
                     assets,
-                    balances: account.balances
+                    balances: account.balances,
                 });
             })
             .catch(reject);
@@ -69,7 +69,7 @@ function getBlockTime(block) {
         bts.Apis.instance()
             .db_api()
             .exec("get_block", [block])
-            .then(result => {
+            .then((result) => {
                 blockData[block] = new Date(result.timestamp + "Z");
                 resolve(blockData[block]);
             })
@@ -81,20 +81,20 @@ function getAssetData(asset) {
     return new Promise((resolve, reject) => {
         if (assetData[asset]) return resolve(assetData[asset]);
         FetchChain("getObject", asset, undefined, {
-            [asset]: false
+            [asset]: false,
         })
-            .then(result => {
+            .then((result) => {
                 let a = result.toJS();
                 assetData[asset] = {
                     symbol: a.symbol.replace(
                         /OPEN\.|BRIDGE\.|RUDEX\.|GDEX\.|BLOCK\./,
                         ""
                     ),
-                    precision: a.precision
+                    precision: a.precision,
                 };
                 resolve(assetData[asset]);
             })
-            .catch(err => {
+            .catch((err) => {
                 reject();
             });
     });
@@ -102,14 +102,12 @@ function getAssetData(asset) {
 
 function resolveBlockTimes(operations) {
     return new Promise((resolve, reject) => {
-        let promises = operations.map(op => {
+        let promises = operations.map((op) => {
             if (op.block_time)
                 blockData[op.block_num] = new Date(op.block_time);
             return getBlockTime(op.block_num);
         });
-        Promise.all(promises)
-            .then(resolve)
-            .catch(reject);
+        Promise.all(promises).then(resolve).catch(reject);
     });
 }
 
@@ -119,7 +117,7 @@ function resolveAssets(operations, list) {
         let assets = {};
 
         if (operations) {
-            operations.forEach(record => {
+            operations.forEach((record) => {
                 const type = ops[record.op[0]];
 
                 switch (type) {
@@ -151,19 +149,17 @@ function resolveAssets(operations, list) {
         }
 
         if (list) {
-            list.forEach(entry => {
+            list.forEach((entry) => {
                 assets[entry] = true;
             });
         }
 
-        Object.keys(assets).forEach(asset_id => {
+        Object.keys(assets).forEach((asset_id) => {
             if (!assetData[asset_id] && !!asset_id) {
                 promises.push(getAssetData(asset_id));
             }
         });
-        Promise.all(promises)
-            .then(resolve)
-            .catch(reject);
+        Promise.all(promises).then(resolve).catch(reject);
     });
 }
 
@@ -184,5 +180,5 @@ module.exports = {
     resolveAssets,
     resolveBlockTimes,
     getAsset,
-    getBlock
+    getBlock,
 };
